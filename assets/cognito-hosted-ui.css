@@ -1,0 +1,23 @@
+.background-customizable {
+  background-color: #fff;
+}
+
+.banner-customizable {
+  background-color: #e9e0d9;
+}
+
+.logo-customizable {
+  max-height: 80px;
+}
+
+.submitButton-customizable {
+  color: #000;
+  background-color: #BDF0D6;
+  border: none;
+}
+
+.submitButton-customizable:hover {
+  color: #000;
+  background-color: #A5D3C5;
+  border: none;
+}
