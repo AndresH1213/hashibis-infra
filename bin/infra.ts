@@ -15,7 +15,7 @@ validateEnvironmentVariables();
 
 const app = new cdk.App();
 
-const stage = app.node.tryGetContext('env');
+const stage = app.node.tryGetContext('env') || process.env.ENV;
 
 const { account, region } = getEnvironment(stage);
 
