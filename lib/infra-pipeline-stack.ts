@@ -1,5 +1,5 @@
 import { Construct } from 'constructs';
-import { Stack, SecretValue } from 'aws-cdk-lib';
+import { Stack } from 'aws-cdk-lib';
 import { BasicStackProps } from '../interfaces';
 import { getResourceNameWithPrefix, getGithubBranchName, getSecretArn } from '../util';
 import * as pipelines from 'aws-cdk-lib/pipelines';
@@ -8,6 +8,7 @@ import { DynamoStage } from './stages/dynamo-stage';
 import { BucketStage } from './stages/bucket-stage';
 import { PermissionsStage } from './stages/permissions-stage';
 import { GitHubTrigger } from 'aws-cdk-lib/aws-codepipeline-actions';
+import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 
 export class InfraPipelineStack extends Stack {
   private pipeline: pipelines.CodePipeline;
@@ -22,17 +23,16 @@ export class InfraPipelineStack extends Stack {
   private createPipeline() {
     const gitHubOwner = process.env.GITHUB_OWNER;
     const gitHubInfra = process.env.GITHUB_REPO_INFRA;
-    const githubSecret = SecretValue.secretsManager(
-      getSecretArn({
-        region: this.props.env?.region!,
-        account: this.props.env?.account!,
-        stage: this.props.stage,
-      }),
-      {
-        jsonField: 'GITHUB_TOKEN',
-      }
-    );
-    console.log('github', githubSecret.unsafeUnwrap().toString());
+    const secretsArn = getSecretArn({
+      region: this.props.env?.region!,
+      account: this.props.env?.account!,
+      stage: this.props.stage,
+    });
+    const secrets = Secret.fromSecretAttributes(this, 'HashibisSecrets', {
+      secretCompleteArn: secretsArn,
+    });
+    const githubSecret = secrets.secretValueFromJson('GITHUB_TOKEN');
+
     this.pipeline = new pipelines.CodePipeline(this, 'InfraPipeline', {
       pipelineName: getResourceNameWithPrefix(`infra-pipeline-${this.props.stage}`),
       codeBuildDefaults: {
@@ -47,7 +47,7 @@ export class InfraPipelineStack extends Stack {
       selfMutation: true,
       synth: new pipelines.ShellStep('Synth', {
         input: pipelines.CodePipelineSource.gitHub(
-          `${gitHubOwner}/${gitHubInfra}}`,
+          `${gitHubOwner}/${gitHubInfra}`,
           getGithubBranchName(this.props.stage),
           {
             authentication: githubSecret,
