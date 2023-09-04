@@ -1,12 +1,12 @@
 import { Construct } from 'constructs';
 import * as cdk from 'aws-cdk-lib';
 
-import { PermissionStackProps } from '../../interfaces';
+import { BasicStackProps } from '../../interfaces';
 import * as Util from '../../util';
 import { PermissionStack } from '../permissions-stack';
 
 export class PermissionsStage extends cdk.Stage {
-  constructor(scope: Construct, id: string, props?: PermissionStackProps) {
+  constructor(scope: Construct, id: string, props?: BasicStackProps) {
     super(scope, id, props);
 
     new PermissionStack(this, `permission-${props?.stage}`, {
@@ -16,10 +16,6 @@ export class PermissionsStage extends cdk.Stage {
       },
       stage: props?.stage || 'dev',
       name: Util.getStackNameWithPrefix(`permission-${props?.stage}`),
-      stacks: {
-        dynamo: props?.stacks.dynamo!,
-        bucket: props?.stacks.bucket!,
-      },
     });
   }
 }

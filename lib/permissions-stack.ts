@@ -1,7 +1,6 @@
-import { CfnOutput, Stack } from 'aws-cdk-lib';
+import { CfnOutput, Stack, Fn } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import { PermissionStackProps } from '../interfaces';
-import { DynamoStack } from './dynamo-stack';
+import { BasicStackProps } from '../interfaces';
 import {
   Effect,
   ManagedPolicy,
@@ -11,22 +10,25 @@ import {
   ServicePrincipal,
 } from 'aws-cdk-lib/aws-iam';
 import { getResourceNameWithPrefix, getSecretArn } from '../util';
-import { BucketStack } from './bucket-stack';
 
 export class PermissionStack extends Stack {
-  props: PermissionStackProps;
-  dynamoStack: DynamoStack;
-  s3Stack: BucketStack;
+  props: BasicStackProps;
   dynamoPolicy: PolicyStatement;
   s3Policy: PolicyStatement;
   lambdaPolicy: PolicyStatement;
   secretManagerPolicy: PolicyStatement;
   lambdaRole: Role;
-  constructor(scope: Construct, id: string, props: PermissionStackProps) {
+
+  medicalHistoryTableArn: string;
+  personalInformationTableArn: string;
+  productTableArn: string;
+  orderTableArn: string;
+  apiBucketArn: string;
+
+  constructor(scope: Construct, id: string, props: BasicStackProps) {
     super(scope, id, props);
     this.props = props;
-    this.dynamoStack = props.stacks.dynamo;
-    this.s3Stack = props.stacks.bucket;
+    this.importValues();
     this.dynamoPolicy = this.createDynamoPolicy();
     this.s3Policy = this.createS3Policy();
     this.lambdaPolicy = this.createLambdaPolicy();
@@ -40,14 +42,14 @@ export class PermissionStack extends Stack {
       effect: Effect.ALLOW,
       actions: ['dynamodb:*'],
       resources: [
-        this.dynamoStack.medicalHistoryTable.tableArn,
-        `${this.dynamoStack.medicalHistoryTable.tableArn}/index/*`,
-        this.dynamoStack.personalInformationTable.tableArn,
-        `${this.dynamoStack.personalInformationTable.tableArn}/index/*`,
-        this.dynamoStack.productTable.tableArn,
-        `${this.dynamoStack.productTable.tableArn}/index/*`,
-        this.dynamoStack.orderTable.tableArn,
-        `${this.dynamoStack.orderTable.tableArn}/index/*`,
+        this.medicalHistoryTableArn,
+        `${this.medicalHistoryTableArn}/index/*`,
+        this.personalInformationTableArn,
+        `${this.personalInformationTableArn}/index/*`,
+        this.productTableArn,
+        `${this.productTableArn}/index/*`,
+        this.orderTableArn,
+        `${this.orderTableArn}/index/*`,
       ],
     });
   }
@@ -56,7 +58,7 @@ export class PermissionStack extends Stack {
     return new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ['s3:*'],
-      resources: [`${this.s3Stack.apiBucket.bucketArn}/*`],
+      resources: [`${this.apiBucketArn}/*`],
     });
   }
 
@@ -103,6 +105,24 @@ export class PermissionStack extends Stack {
         }),
       },
     });
+  }
+
+  private importValues() {
+    this.medicalHistoryTableArn = Fn.importValue(
+      getResourceNameWithPrefix(`medical-history-table-arn-${this.props.stage}`)
+    );
+    this.personalInformationTableArn = Fn.importValue(
+      getResourceNameWithPrefix(`personal-information-table-arn-${this.props.stage}`)
+    );
+    this.productTableArn = Fn.importValue(
+      getResourceNameWithPrefix(`product-table-arn-${this.props.stage}`)
+    );
+    this.orderTableArn = Fn.importValue(
+      getResourceNameWithPrefix(`order-table-arn-${this.props.stage}`)
+    );
+    this.apiBucketArn = Fn.importValue(
+      getResourceNameWithPrefix(`api-bucket-arn-${this.props.stage}`)
+    );
   }
 
   private outputValues() {

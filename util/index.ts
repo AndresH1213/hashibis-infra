@@ -17,7 +17,7 @@ export function camelCaseToSnakeCase(str: string) {
 export function getGithubBranchName(stage: string) {
   switch (stage) {
     case 'dev':
-      return 'develop';
+      return 'main'; //testing
     case 'prod':
       return 'main';
     default:

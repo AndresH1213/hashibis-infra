@@ -7,6 +7,7 @@ import { ApiGatewayStage } from './stages/api-gateway-stage';
 import { DynamoStage } from './stages/dynamo-stage';
 import { BucketStage } from './stages/bucket-stage';
 import { PermissionsStage } from './stages/permissions-stage';
+import { GitHubTrigger } from 'aws-cdk-lib/aws-codepipeline-actions';
 
 export class InfraPipelineStack extends Stack {
   private pipeline: pipelines.CodePipeline;
@@ -15,20 +16,31 @@ export class InfraPipelineStack extends Stack {
     super(scope, id, props);
     this.props = props;
 
-    this.createPipeline(props);
+    this.createPipeline();
   }
 
-  private createPipeline(props: BasicStackProps) {
+  private createPipeline() {
     const gitHubOwner = process.env.GITHUB_OWNER;
     const gitHubInfra = process.env.GITHUB_REPO_INFRA;
+    const githubSecret = SecretValue.secretsManager(
+      getSecretArn({
+        region: this.props.env?.region!,
+        account: this.props.env?.account!,
+        stage: this.props.stage,
+      }),
+      {
+        jsonField: 'GITHUB_TOKEN',
+      }
+    );
+    console.log('github', githubSecret.unsafeUnwrap().toString());
     this.pipeline = new pipelines.CodePipeline(this, 'InfraPipeline', {
-      pipelineName: getResourceNameWithPrefix(`infra-pipeline-${props.stage}`),
+      pipelineName: getResourceNameWithPrefix(`infra-pipeline-${this.props.stage}`),
       codeBuildDefaults: {
         buildEnvironment: {
           environmentVariables: {
-            ENV: { value: props.stage },
-            AWS_ACCOUNT_ID: { value: props.env?.account },
-            AWS_REGION_ID: { value: props.env?.region },
+            ENV: { value: this.props.stage },
+            AWS_ACCOUNT_ID: { value: this.props.env?.account },
+            AWS_REGION_ID: { value: this.props.env?.region },
           },
         },
       },
@@ -36,40 +48,25 @@ export class InfraPipelineStack extends Stack {
       synth: new pipelines.ShellStep('Synth', {
         input: pipelines.CodePipelineSource.gitHub(
           `${gitHubOwner}/${gitHubInfra}}`,
-          getGithubBranchName(props.stage),
+          getGithubBranchName(this.props.stage),
           {
-            authentication: SecretValue.secretsManager(
-              getSecretArn({
-                region: this.props.env?.region!,
-                account: this.props.env?.account!,
-                stage: this.props.stage,
-              }),
-              {
-                jsonField: 'GITHUB_TOKEN',
-              }
-            ),
+            authentication: githubSecret,
+            trigger: GitHubTrigger.WEBHOOK,
           }
         ),
         commands: ['npm ci', 'npm run build', 'npx cdk synth'],
       }),
     });
 
-    this.pipeline.addStage(new ApiGatewayStage(this, 'ApiGwStage', props));
+    this.pipeline.addStage(new ApiGatewayStage(this, 'ApiGwStage', this.props));
     const persistenceResourcesWave = this.pipeline.addWave('PersistenceResources');
 
-    const dynamoStage = new DynamoStage(this, 'DynamoStage', props);
-    const bucketStage = new BucketStage(this, 'BucketStage', props);
+    const dynamoStage = new DynamoStage(this, 'DynamoStage', this.props);
+    const bucketStage = new BucketStage(this, 'BucketStage', this.props);
     persistenceResourcesWave.addStage(dynamoStage);
     persistenceResourcesWave.addStage(bucketStage);
 
-    const permissionProps = {
-      ...props,
-      stacks: {
-        dynamo: dynamoStage.stack,
-        bucket: bucketStage.stack,
-      },
-    };
-    this.pipeline.addStage(new PermissionsStage(this, 'PermissionStage', permissionProps));
+    this.pipeline.addStage(new PermissionsStage(this, 'PermissionStage', this.props));
     this.pipeline.buildPipeline();
   }
 }

@@ -22,6 +22,7 @@ export class DynamoStack extends Stack {
 
     this.addGlobalSecondaryIndexes();
     this.exportTableNames();
+    this.exportTableArns();
   }
 
   createTable(name: string, pk: string, sk?: string) {
@@ -76,6 +77,25 @@ export class DynamoStack extends Stack {
     new CfnOutput(this, 'OrderTableName', {
       value: this.orderTable.tableName,
       exportName: getResourceNameWithPrefix(`order-table-name-${this.stage}`),
+    });
+  }
+
+  exportTableArns() {
+    new CfnOutput(this, 'PersonalInformationTableArn', {
+      value: this.personalInformationTable.tableArn,
+      exportName: getResourceNameWithPrefix(`personal-information-table-arn-${this.stage}`),
+    });
+    new CfnOutput(this, 'MedicalHistoryTableArn', {
+      value: this.medicalHistoryTable.tableArn,
+      exportName: getResourceNameWithPrefix(`medical-history-table-arn-${this.stage}`),
+    });
+    new CfnOutput(this, 'ProductTableArn', {
+      value: this.productTable.tableArn,
+      exportName: getResourceNameWithPrefix(`product-table-arn-${this.stage}`),
+    });
+    new CfnOutput(this, 'OrderTableArn', {
+      value: this.orderTable.tableArn,
+      exportName: getResourceNameWithPrefix(`order-table-arn-${this.stage}`),
     });
   }
 }

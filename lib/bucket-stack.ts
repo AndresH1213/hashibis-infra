@@ -26,5 +26,10 @@ export class BucketStack extends Stack {
       value: this.apiBucket.bucketName,
       exportName: getResourceNameWithPrefix(`bucket-name-${this.props.stage}`),
     });
+
+    new CfnOutput(this, 'ApiBucketArnOutput', {
+      value: this.apiBucket.bucketArn,
+      exportName: getResourceNameWithPrefix(`api-bucket-arn-${this.props.stage}`),
+    });
   }
 }

@@ -19,13 +19,6 @@ const stage = app.node.tryGetContext('env');
 
 const { account, region } = getEnvironment(stage);
 
-new InfraPipelineStack(app, 'InfraStack', {
-  env: { account, region },
-  stage,
-  name: getStackNameWithPrefix(`infra-pipeline-${stage}`),
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
-});
-
 new ApiGatewayStack(app, `apigateway-${stage}`, {
   stage,
   name: getStackNameWithPrefix(`apigateway-${stage}`),
@@ -44,12 +37,16 @@ const bucketStack = new BucketStack(app, `bucket-${stage}`, {
   env: { account, region },
 });
 
-new PermissionStack(app, `permission-${stage}`, {
+const permissionsStack = new PermissionStack(app, `permission-${stage}`, {
   stage,
   name: getStackNameWithPrefix(`permission-${stage}`),
   env: { account, region },
-  stacks: {
-    dynamo: dynamoStack,
-    bucket: bucketStack,
-  },
+});
+permissionsStack.addDependency(dynamoStack);
+permissionsStack.addDependency(bucketStack);
+
+new InfraPipelineStack(app, `infra-pipeline-${stage}`, {
+  env: { account, region },
+  stage,
+  name: getStackNameWithPrefix(`infra-pipeline-${stage}`),
 });
