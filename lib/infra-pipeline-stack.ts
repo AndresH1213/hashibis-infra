@@ -9,6 +9,7 @@ import { BucketStage } from './stages/bucket-stage';
 import { PermissionsStage } from './stages/permissions-stage';
 import { GitHubTrigger } from 'aws-cdk-lib/aws-codepipeline-actions';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
+import { LinuxBuildImage } from 'aws-cdk-lib/aws-codebuild';
 
 export class InfraPipelineStack extends Stack {
   private pipeline: pipelines.CodePipeline;
@@ -42,6 +43,7 @@ export class InfraPipelineStack extends Stack {
             AWS_ACCOUNT_ID: { value: this.props.env?.account },
             AWS_REGION_ID: { value: this.props.env?.region },
           },
+          buildImage: LinuxBuildImage.STANDARD_5_0,
         },
       },
       selfMutation: true,
