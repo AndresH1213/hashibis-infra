@@ -9,13 +9,13 @@ export class ApiGatewayStage extends cdk.Stage {
   constructor(scope: Construct, id: string, props?: BasicStackProps) {
     super(scope, id, props);
 
-    new ApiGatewayStack(this, `api-gateway-${props?.stage}`, {
+    new ApiGatewayStack(this, `apigateway-${props?.stage}`, {
       env: {
         region: props?.env?.region,
         account: props?.env?.account,
       },
       stage: props?.stage || 'dev',
-      name: Util.getStackNameWithPrefix(`api-gateway-${props?.stage}`),
+      name: Util.getStackNameWithPrefix(`apigateway-${props?.stage}`),
     });
   }
 }
