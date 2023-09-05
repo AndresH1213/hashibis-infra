@@ -33,8 +33,9 @@ type secretProps = {
 
 export function getSecretArn(props: secretProps) {
   const baseArnStr = 'arn:aws:secretsmanager';
-  const secretId =
+  const secretIdEnv =
     props.stage === 'prod' ? process.env.AWS_SECRET_ID_PROD : process.env.AWS_SECRET_ID_DEV;
+  const secretId = secretIdEnv || process.env.AWS_SECRET_ID;
   return `${baseArnStr}:${props.region}:${props.account}:secret:${secretId}`;
 }
 
