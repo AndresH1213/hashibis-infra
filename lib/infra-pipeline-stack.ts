@@ -64,7 +64,7 @@ export class InfraPipelineStack extends Stack {
       }),
     });
 
-    this.pipeline.addStage(new ApiGatewayStage(this, 'ApiGwStage', this.props));
+    // this.pipeline.addStage(new ApiGatewayStage(this, 'ApiGwStage', this.props));
     const persistenceResourcesWave = this.pipeline.addWave('PersistenceResources');
 
     const dynamoStage = new DynamoStage(this, 'DynamoStage', this.props);
